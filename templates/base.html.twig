@@ -1,0 +1,32 @@
+{% extends 'base.html.twig' %} {% block title %}{{
+    form.vars.value.id ? "Modifier" : "Nouvelle"
+}}
+famille{% endblock %} {% block body %}
+<div class="container mt-4">
+    <h1>
+        {{
+            form.vars.value.id
+                ? "Modifier la famille"
+                : "Ajouter une nouvelle famille"
+        }}
+    </h1>
+
+    {{ form_start(form) }}
+    <div class="mb-3">
+        {{ form_row(form.nom) }}
+        {{ form_row(form.adresse) }}
+        {{ form_row(form.nombreEnfants) }}
+        {{ form_row(form.telephone) }}
+        {{ form_row(form.situation) }}
+    </div>
+
+    <button class="btn btn-success">
+        {{ form.vars.value.id ? "Enregistrer" : "Créer" }}
+    </button>
+    {{ form_end(form) }}
+
+    <a href="{{ path('app_dossier_index') }}" class="btn btn-secondary mt-3"
+        >⬅ Retour</a
+    >
+</div>
+{% endblock %}
