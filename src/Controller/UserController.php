@@ -3,11 +3,14 @@
 namespace App\Controller;
 
 use App\Entity\User;
+use App\Entity\Dossier;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use App\Entity\Role;    
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
 #[Route('/api/users')]
 class UserController extends AbstractController
@@ -57,25 +60,42 @@ class UserController extends AbstractController
     }
 
     #[Route('/create', methods: ['POST'])]
-    public function create(Request $request, EntityManagerInterface $em): JsonResponse
-    {
-        $data = json_decode($request->getContent(), true);
+public function create(Request $request, EntityManagerInterface $em): JsonResponse
+{
+    $data = json_decode($request->getContent(), true);
 
-        $user = new User();
-        $user->setEmail($data['email']);
-        $user->setRoles($data['roles']);
-        $user->setPassword(password_hash($data['password'], PASSWORD_DEFAULT));
-
-        $user->setFirstName($data['first_name']);
-        $user->setLastName($data['last_name']);
-        $user->setPhoneNumber($data['phone_number']);
-        $user->setCreatedAt(new \DateTime());
-
-        $em->persist($user);
-        $em->flush();
-
-        return $this->json(['message' => 'User created', 'id' => $user->getId()], 201);
+    // Récupération du rôle (on récupère bien un objet Role, pas User)
+    $role = $em->getRepository(Role::class)->find($data['role_id']);
+    if (!$role) {
+        return $this->json(['message' => 'Rôle introuvable'], Response::HTTP_NOT_FOUND);
     }
+
+    // Récupération du dossier
+    $dossier = $em->getRepository(Dossier::class)->find($data['dossier_id']);
+    if (!$dossier) {
+        return $this->json(['message' => 'Dossier introuvable'], Response::HTTP_NOT_FOUND);
+    }
+
+    // Création de l'utilisateur
+    $user = new User();
+    $user->setEmail($data['email']);
+    $user->setRoles($data['roles']); // Tableau de rôles Symfony
+    $user->setPassword(password_hash($data['password'], PASSWORD_DEFAULT));
+    $user->setFirstName($data['first_name']);
+    $user->setLastName($data['last_name']);
+    $user->setPhoneNumber($data['phone_number']);
+    $user->setCreatedAt(new \DateTime());
+    $user->setRole($role);
+    $user->setDossier($dossier);
+
+    $em->persist($user);
+    $em->flush();
+
+    return $this->json([
+        'message' => 'Utilisateur créé avec succès',
+        'id' => $user->getId()
+    ], Response::HTTP_CREATED);
+}
 
     #[Route('/edit/{id}', methods: ['PUT'])]
     public function update(Request $request, EntityManagerInterface $em, int $id): JsonResponse
